@@ -1,0 +1,64 @@
+#!/usr/bin/perl
+use strict;
+use warnings;
+use Getopt::Long;
+use File::Basename;
+
+GetOptions(
+  'bam=s' => \ my $bam_file,
+  'bed=s'   => \ my $bed_file,
+  'outdir=s'   => \ my $out_path
+) or die("\nThis script calculates the mean coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
+
+if( $bam_file && $bed_file && $out_path ){
+	main();
+}else{
+	die("\nThis script calculates the mean coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
+};
+
+sub main{
+
+	my ($filename,$dir,$ext) = fileparse($bam_file, qr/\.[^.]*/);
+
+	open(OUT,">" . $out_path . "/" . $filename . ".coverage.tsv");
+	open(IN, $bed_file);
+	my @regions = <IN>;
+	close(IN);
+
+	my $average_mean = 0;
+	my $above_20x_mean = 0;
+
+	my $total = scalar(@regions);
+	my $i = 0;
+	print OUT "NAME\tREGION\tMEAN_COV\tPERCENT_ABOVE_20x\n";
+	foreach my $line (@regions){
+		
+		chomp($line);
+
+		print "processing $bam_file... $i/$total\n";
+		$i++;
+
+		my @array = split(/\t/,$line);
+		my $chr = $array[0];
+		my $start = $array[1];
+		my $end = $array[2];
+		
+		my $average = `samtools depth -r $chr:$start-$end $bam_file | awk '{sum+=\$3} END {  if(NR==0) printf("%.0f",0); else printf("%.0f", sum/NR); }'`;
+		my $above_20x = `samtools depth -r $chr:$start-$end $bam_file | awk '\$3<20{c++} END{ if(NR==0) printf("%.1f",0); else printf("%.1f",(NR-c)/NR*100);}'`;
+
+		$average_mean = $average_mean + $average;
+		$above_20x_mean = $above_20x_mean + $above_20x;
+
+		print OUT "$filename\t$chr:$start-$end\t$average\t$above_20x\n";
+		
+	};
+	close(OUT);
+
+	open(OUT,">" . $out_path . "/" . $filename . ".coverage.summary.tsv");
+	print OUT "NAME\tTOTAL_MEAN_COV\tTOTAL_PERCENT_ABOVE_20x\n";
+	print OUT $filename ."\t" . sprintf('%.0f', $average_mean/$total) . "\t" . sprintf('%.2f', $above_20x_mean/$total) . "\n";
+	close(OUT);
+
+};
+
+
