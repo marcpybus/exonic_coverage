@@ -43,8 +43,8 @@ sub main{
 		my $start = $array[1];
 		my $end = $array[2];
 		
-		my $average = `samtools depth -r $chr:$start-$end $bam_file | awk '{sum+=\$3} END {  if(NR==0) printf("%.0f",0); else printf("%.0f", sum/NR); }'`;
-		my $above_20x = `samtools depth -r $chr:$start-$end $bam_file | awk '\$3<20{c++} END{ if(NR==0) printf("%.1f",0); else printf("%.1f",(NR-c)/NR*100);}'`;
+		my $average = `samtools depth -a -Q 20 -q 10 -r $chr:$start-$end $bam_file | awk '{sum+=\$3} END {  if(NR==0) printf("%.0f",0); else printf("%.0f", sum/NR); }'`;
+		my $above_20x = `samtools depth -a -Q 20 -q 10 -r $chr:$start-$end $bam_file | awk '\$3<20{c++} END{ if(NR==0) printf("%.1f",0); else printf("%.1f",(NR-c)/NR*100);}'`;
 
 		$average_mean = $average_mean + $average;
 		$above_20x_mean = $above_20x_mean + $above_20x;
