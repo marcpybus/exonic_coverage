@@ -25,7 +25,7 @@ chmod a+x mean_coverage_per_region
 ### Executing program using Docker Hub image
 
 ```
-docker run marcpybus/mean_coverage_per_region --bam FILE --bed FILE --outdir PATH
+docker run marcpybus/exonic_coverage:1.0 mean_coverage_per_region --bam FILE --bed FILE --outdir PATH
 ```
 
 ## Authors
