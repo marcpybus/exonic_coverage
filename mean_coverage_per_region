@@ -8,12 +8,12 @@ GetOptions(
   'bam=s' => \ my $bam_file,
   'bed=s'   => \ my $bed_file,
   'outdir=s'   => \ my $out_path
-) or die("\nThis script calculates the mean coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
+) or die("\nThis script calculates the mean coverage, min coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
 
 if( $bam_file && $bed_file && $out_path ){
 	main();
 }else{
-	die("\nThis script calculates the mean coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
+	die("\nThis script calculates the mean coverage, min coverage and percent of bp above 20x in a BAM file for each region in a BED file\nUsage: $0 --bam FILE --bed FILE --outdir PATH\n\n");
 };
 
 sub main{
@@ -30,7 +30,7 @@ sub main{
 
 	my $total = scalar(@regions);
 	my $i = 0;
-	print OUT "NAME\tREGION\tMEAN_COV\tPERCENT_ABOVE_20x\n";
+	print OUT "NAME\tREGION\tMEAN_COV\tMIN_COV\tPERCENT_ABOVE_20x\n";
 	foreach my $line (@regions){
 		
 		chomp($line);
@@ -42,14 +42,15 @@ sub main{
 		my $chr = $array[0];
 		my $start = $array[1];
 		my $end = $array[2];
-		
+
+		my $min = `samtools depth -a -Q 20 -q 20 -r $chr:$start-$end $bam_file | awk 'BEGIN {min=100000} $3<min {min=$3} END { if(NR==0) printf("%.0f",0); else printf("%.0f", min); }'`;
 		my $average = `samtools depth -a -Q 20 -q 10 -r $chr:$start-$end $bam_file | awk '{sum+=\$3} END {  if(NR==0) printf("%.0f",0); else printf("%.0f", sum/NR); }'`;
 		my $above_20x = `samtools depth -a -Q 20 -q 10 -r $chr:$start-$end $bam_file | awk '\$3<20{c++} END{ if(NR==0) printf("%.1f",0); else printf("%.1f",(NR-c)/NR*100);}'`;
 
 		$average_mean = $average_mean + $average;
 		$above_20x_mean = $above_20x_mean + $above_20x;
 
-		print OUT "$filename\t$chr:$start-$end\t$average\t$above_20x\n";
+		print OUT "$filename\t$chr:$start-$end\t$average\t$min\t$above_20x\n";
 		
 	};
 	close(OUT);
