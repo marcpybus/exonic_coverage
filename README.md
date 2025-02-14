@@ -1,6 +1,6 @@
 # exonic_coverage
 
-This script calculates the mean coverage and percent of bp above 20x in a BAM file for each region in a BED file.
+This script calculates the mean coverage, min coverage and percent of bp above 20x in a BAM file for each region in a BED file.
 
 ### Installing
 
